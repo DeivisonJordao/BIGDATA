@@ -28,6 +28,11 @@
 
 12. EXPIRE usuario:2 10  # Configura expiração de 10 segundos
 
+
+
+
+
+
 ## Exercícios de String:
 
 1. SET animal "gato"
@@ -47,6 +52,10 @@
 8. INCRBY count 10  # Incrementa para 11
 
 9. STRLEN count  # Retorna o comprimento da string
+
+
+
+
 
 ## Exercícios de Hashes:
 
@@ -70,7 +79,11 @@
 
 10. HSET arvores pinheiro 12  # Corrige valor
     HGET arvores pinheiro  # Verifica
-    
+
+
+
+
+
 ## Exercícios de Listas:
 
 1. LPUSHX tarefas "Verificar correio"  # Adiciona só se a lista existir
@@ -95,6 +108,10 @@
 
 11. LRANGE tarefas 0 -1  # Lista completa
 
+
+
+
+
 ## Exercícios de Sets:
 
 1. SADD cesta:1 maçãs laranjas bananas
@@ -114,6 +131,11 @@
 
 8. SREM cesta:1 laranjas
 
+
+
+
+
+
 ## Exercícios de Sorted Sets:
 
 1. ZADD equipe:1 69 Joao 67 Leonardo 70 Sergio 68 Sandra 70 Ana 73 Maria
@@ -128,6 +150,11 @@
 
 6. ZREVRANGEBYSCORE equipe:1 69 65  # Membros decrescente entre 65 e 69
 
+
+
+
+
+
 ## Exercícios de TTL:
 
 1. SET quote:221 94.23
@@ -139,34 +166,47 @@
 
 4. Repetidamente verificar TTL até expirar
 
+
+
+
+
+
+
 ## Modelagem de Dados no Redis
 
 ### Modelo Artigo–Tags
+
 
 Armazenar um artigo em uma hash:
 
 HSET article:1 name "Exemplo de Artigo" description "Descrição do artigo" filename "artigo1.txt" posting_date "2023-10-03"
 
+
 Associar tags ao artigo (usando um conjunto):
 
 SADD article:1:tags "tech" "redis" "tutorial"
+
 
 Manter também uma associação inversa (tag → artigos):
 
 SADD tag:tech article:1
 
+
 Para listar todos os artigos:
 
 KEYS article:*
+
 
 Para recuperar um artigo e suas tags:
 
 HGETALL article:1
 SMEMBERS article:1:tags
 
+
 Para listar artigos de uma determinada tag:
 
 SMEMBERS tag:tech
+
 
 ## Padrão 1: Embedded Pattern (Dados embutidos)
 
@@ -187,5 +227,100 @@ product = {
 }
 r.set("product:1", json.dumps(product))
 
+
 Recupere os dados:
 
+data = json.loads(r.get("product:1"))
+
+
+Realize operações:
+– Modifique o objeto data em Python e grave novamente com r.set(...).
+
+
+## Padrão 2: Partial Embed Pattern (1:N Parcial)
+
+Exemplo em Python:
+
+product_with_reviews = {
+    "name": "Laptop Ultra",
+    "price": 7999,
+    "recent_reviews": [
+        {"user": "Alice", "rating": 5, "comment": "Excelente desempenho!"},
+        {"user": "Bob", "rating": 4, "comment": "Ótimo, mas bateria poderia ser melhor."}
+    ]
+}
+r.set("product:2", json.dumps(product_with_reviews))
+
+Recuperação e operações são semelhantes ao Padrão 1.
+
+
+## Padrão 3: Aggregate Pattern
+Exemplo:
+
+HSET product:1:ratings total_reviews 2 sum_ratings 9
+
+Recuperar os dados:
+
+HGETALL product:1:ratings
+
+Para atualizar os valores, use comandos como:
+
+HINCRBY product:1:ratings total_reviews 1
+
+
+## Padrão 4: Polymorphic Pattern
+Exemplo:
+
+SET product:3 '{"type": "game_console", "name": "GameBox", "storage": "1TB", "hdmi_ports": 2}'
+SET product:4 '{"type": "earbuds", "name": "SoundBuds", "battery_life": "10h", "connection_type": "Bluetooth"}'
+
+Recuperação e operações: Execute um GET e faça o parse do JSON.
+
+
+## Padrão 5: Bucket Pattern
+Exemplo em Python:
+
+from datetime import datetime
+r.zadd("temperature:sensor:1", {str(datetime.now()): 22.5})
+r.zadd("temperature:sensor:1", {str(datetime.now()): 23.1})
+
+Recupere os dados:
+
+r.zrange("temperature:sensor:1", 0, -1, withscores=True)
+
+
+## Padrão 6: Tree and Graph Pattern
+Exemplo:
+
+SADD employee:1:reports_to "employee:2" "employee:3"
+SADD employee:2:reports_to "employee:4"
+
+Recuperar os dados:
+
+SMEMBERS employee:1:reports_to
+
+## Padrão 7: Revision Pattern
+Exemplo:
+
+post = {
+    "title": "Guia Redis",
+    "body": "Conteúdo inicial...",
+    "revisions": [
+        {"title": "Guia Redis", "body": "Conteúdo atualizado 1"},
+        {"title": "Guia Redis", "body": "Conteúdo atualizado 2"}
+    ]
+}
+r.set("post:1", json.dumps(post))
+
+Recupere os dados: Use GET e faça o parse do JSON para acessar as revisões.
+
+
+## Padrão 8: Schema Version Pattern
+Exemplo:
+
+user_v1 = {"schema": "1", "name": "Carlos", "email": "carlos@email.com"}
+r.set("user:1", json.dumps(user_v1))
+
+Recupere os dados:
+
+json.loads(r.get("user:1"))
