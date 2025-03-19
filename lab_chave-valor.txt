@@ -1,0 +1,191 @@
+## Exercícios de Chaves:
+
+1. SET simples "um valor"
+   GET simples  # Verifica se o valor foi inserido
+
+2. SET usuario:1 "Dados do usuário 1"
+   SET usuario:2 "Dados do usuário 2"
+   SET usuario:3 "Dados do usuário 3"
+
+3. KEYS *  # Lista todas as chaves
+
+4. KEYS usuario:*  # Lista chaves de usuários
+
+5. SET usuario:11 "Usuário 11"
+   SET usuario:21 "Usuário 21"
+
+6. KEYS usuario:*1  # Lista chaves de usuários terminando em 1
+
+7. SET usuario:31 "Usuário 31"  # Entre 20 e 39
+
+8. KEYS usuario:*1  # Neste caso, listará usuario:11, usuario:21, usuario:31
+
+9. RENAME usuario:1 usuario:01
+
+10. KEYS *1  # Lista todas as chaves terminando em 1
+
+11. DEL usuario:3  # Remove usuário 3
+
+12. EXPIRE usuario:2 10  # Configura expiração de 10 segundos
+
+## Exercícios de String:
+
+1. SET animal "gato"
+
+2. GETSET animal "peixe"  # Retorna "gato" e muda para "peixe"
+
+3. APPEND animal "-espada"  # Resultado: "peixe-espada"
+
+4. SUBSTR animal 5 10  # Retorna "espada"
+
+5. SUBSTR animal 0 4  # Retorna "peixe"
+
+6. SET count 0
+
+7. INCR count  # Incrementa para 1
+
+8. INCRBY count 10  # Incrementa para 11
+
+9. STRLEN count  # Retorna o comprimento da string
+
+## Exercícios de Hashes:
+
+1. HEXISTS animais cachorros  # Verifica existência
+
+2. HSET animais cachorros 25
+
+3. HSET animais gatos 37
+
+4. HSET animais peixes 28
+
+5. HGETALL animais  # Retorna todos os campos e valores
+
+6. HMGET animais cachorros gatos  # Retorna valores específicos
+
+7. HSET arvores palmeira 81 pinheiro 23 baobá 1
+
+8. HVALS arvores  # Mostra apenas valores
+
+9. HKEYS arvores  # Mostra apenas chaves
+
+10. HSET arvores pinheiro 12  # Corrige valor
+    HGET arvores pinheiro  # Verifica
+    
+## Exercícios de Listas:
+
+1. LPUSHX tarefas "Verificar correio"  # Adiciona só se a lista existir
+
+2. LPUSH tarefas "Verificar correio"  # Adiciona sem verificar
+
+3. RPUSH tarefas "Abrir correio"
+
+4. LPUSH tarefas "Iniciar sistema"
+
+5. LLEN tarefas  # Tamanho da lista
+
+6. LRANGE tarefas 0 -1  # Conteúdo completo
+
+7. LSET tarefas 0 "Abrir o correio"
+
+8. LRANGE tarefas 0 1  # Primeiras 2 entradas
+
+9. LPOP tarefas  # Remove primeira entrada
+
+10. LINDEX tarefas 1  # Segunda entrada
+
+11. LRANGE tarefas 0 -1  # Lista completa
+
+## Exercícios de Sets:
+
+1. SADD cesta:1 maçãs laranjas bananas
+
+2. SMEMBERS cesta:1
+
+3. SADD cesta:2 abacaxis bananas laranjas
+
+4. SMEMBERS cesta:2
+
+5. SINTER cesta:1 cesta:2  # Interseção
+
+6. SMOVE cesta:2 cesta:1 abacaxis  # Move abacaxis
+   SMEMBERS cesta:1  # Verifica
+
+7. SUNIONSTORE allbaskets cesta:1 cesta:2
+
+8. SREM cesta:1 laranjas
+
+## Exercícios de Sorted Sets:
+
+1. ZADD equipe:1 69 Joao 67 Leonardo 70 Sergio 68 Sandra 70 Ana 73 Maria
+
+2. ZCARD equipe:1  # Número de membros
+
+3. ZCOUNT equipe:1 70 75  # Membros com scores entre 70 e 75
+
+4. ZRANGEBYSCORE equipe:1 65 70  # Membros entre 65 e 70
+
+5. ZRANK equipe:1 Sandra  # Classificação da Sandra
+
+6. ZREVRANGEBYSCORE equipe:1 69 65  # Membros decrescente entre 65 e 69
+
+## Exercícios de TTL:
+
+1. SET quote:221 94.23
+
+2. TTL quote:221  # Retorna -1 (sem TTL)
+
+3. EXPIRE quote:221 30  # Define expiração de 30 segundos
+   TTL quote:221  # Verifica tempo restante
+
+4. Repetidamente verificar TTL até expirar
+
+## Modelagem de Dados no Redis
+
+### Modelo Artigo–Tags
+
+Armazenar um artigo em uma hash:
+
+HSET article:1 name "Exemplo de Artigo" description "Descrição do artigo" filename "artigo1.txt" posting_date "2023-10-03"
+
+Associar tags ao artigo (usando um conjunto):
+
+SADD article:1:tags "tech" "redis" "tutorial"
+
+Manter também uma associação inversa (tag → artigos):
+
+SADD tag:tech article:1
+
+Para listar todos os artigos:
+
+KEYS article:*
+
+Para recuperar um artigo e suas tags:
+
+HGETALL article:1
+SMEMBERS article:1:tags
+
+Para listar artigos de uma determinada tag:
+
+SMEMBERS tag:tech
+
+## Padrão 1: Embedded Pattern (Dados embutidos)
+
+Exemplo em Python:
+
+import redis, json
+
+r = redis.StrictRedis(host='<HOST>', port=<PORT>, password='<PASSWORD>', decode_responses=True)
+
+product = {
+    "name": "Smartphone X",
+    "price": 3999,
+    "details": {
+        "manufacturer": "TechCorp",
+        "storage": "128GB",
+        "color": "Black"
+    }
+}
+r.set("product:1", json.dumps(product))
+
+Recupere os dados:
+
